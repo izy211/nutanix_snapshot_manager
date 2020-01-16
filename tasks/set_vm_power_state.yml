@@ -1,0 +1,38 @@
+---
+- name: SET VM POWER STATE | Setting Power State Of {{ vm_name }} To {{ vm_power_state }}
+  uri:
+    url: "https://{{ cluster_ip }}:9440/PrismGateway/services/rest/v2.0/vms/{{ vm_uuid }}/set_power_state"
+    body: "{{ lookup('template', 'set-vm-power-state.json.j2') }}"
+    method: POST
+    validate_certs: no
+    force_basic_auth: yes
+    body_format: json
+    status_code: 201
+    user: "{{ prism_user }}"
+    password: "{{ prism_password }}"
+    return_content: yes
+  register: power_state_info
+  ignore_errors: yes
+
+- name: SET VM POWER STATE | Debug VM Power State Information
+  debug:
+    var: power_state_info
+  when: global_debug
+
+- name: SET VM POWER STATE | Saving Task UUID
+  set_fact:
+    task_uuid: "{{ power_state_info.json.task_uuid }}"
+
+- name: SET VM POWER STATE | Task UUID
+  debug:
+    var: task_uuid
+
+- name: SET VM POWER STATE | Setting Task Name
+  set_fact:
+    task_name: "setting vm power state"
+
+- name: SET VM POWER STATE | Task Name
+  debug:
+    var: task_name
+
+- import_tasks: get_task_status.yml

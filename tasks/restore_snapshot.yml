@@ -1,0 +1,47 @@
+---
+- name: RESTORE SNAPSHOT | Restoring {{ vm_name }} To Snapshot State {{ snapshot_name }}
+  uri:
+    url: "https://{{ cluster_ip }}:9440/PrismGateway/services/rest/v2.0/vms/{{ vm_uuid }}/restore"
+    body: "{{ lookup('template', 'restore-snapshot.json.j2') }}"
+    method: POST
+    validate_certs: no
+    force_basic_auth: yes
+    body_format: json
+    status_code: 201
+    headers: 
+      Cookie: "{{ session_cookie }}"
+    return_content: yes
+  register: restore_snapshot_info
+  ignore_errors: yes
+
+- name: RESTORE SNAPSHOT | Debug Restore Snapshot Information
+  debug:
+    var: restore_snapshot_info
+  when: global_debug
+
+- name: RESTORE SNAPSHOT | Saving Task UUID
+  set_fact:
+    task_uuid: "{{ restore_snapshot_info.json.task_uuid }}"
+
+- name: RESTORE SNAPSHOT | Task UUID
+  debug:
+    var: task_uuid
+
+- name: RESTORE SNAPSHOT | Setting Task Name
+  set_fact:
+    task_name: "restore snapshot"
+
+- name: RESTORE SNAPSHOT | Task Name
+  debug:
+    var: task_name
+
+- import_tasks: get_task_status.yml
+
+- name: RESTORE SNAPSHOT | Power ON VM
+  block:
+    - name: RESTORE SNAPSHOT | Changing Power State To ON
+      set_fact:
+        vm_power_state: "ON"
+
+    - import_tasks: set_vm_power_state.yml
+  when: host_uuid is defined

@@ -1,0 +1,23 @@
+---
+- pause:
+    seconds: 3
+
+- name: GET TASK STATUS | Waiting For {{ task_name|upper }} Task To Complete...
+  uri:
+    url: "https://{{ prism_central }}:9440/api/nutanix/v3/tasks/{{ task_uuid }}"
+    method: GET
+    validate_certs: no
+    force_basic_auth: yes
+    body_format: json
+    status_code: 200
+    user: "{{ prism_user }}"
+    password: "{{ prism_password }}"
+  register: task_status
+  ignore_errors: yes
+  until: task_status.json.status == "SUCCEEDED"
+  retries: 60
+  delay: 10
+
+- name: GET TASK STATUS | Task Status
+  debug:
+    var: task_status.json.status

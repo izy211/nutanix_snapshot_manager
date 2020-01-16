@@ -1,0 +1,58 @@
+---
+- name: CREATE SNAPSHOT | Create A Unique Snapshot Name
+  block:
+    - name: CREATE SNAPSHOT | Getting Epoch Time
+      shell: 'date +%s'
+      register: epoch_time
+
+    - name: CREATE SNAPSHOT | Creating Timestamp From Epoch Time
+      set_fact:
+        timestamp: "{{ epoch_time.stdout|trim }}"
+
+    - name: CREATE SNAPSHOT | Timestamp
+      debug:
+        var: timestamp
+
+    - name: CREATE SNAPSHOT | Appending Snapshot Name With Timestamp To Ensure It Is Unique
+      set_fact:
+        snapshot_name: "{{ snapshot_name }}-{{ timestamp }}"
+      register: timestamped_snapshot_name
+  when:
+    - timestamped_snapshot_name is undefined
+    - enforce_unique_name
+
+- name: CREATE SNAPSHOT | Creating A Snapshot Of {{ vm_name }} Named {{ snapshot_name }}
+  uri:
+    url: "https://{{ cluster_ip }}:9440/PrismGateway/services/rest/v2.0/snapshots/"
+    body: "{{ lookup('template', 'create-snapshot.json.j2') }}"
+    method: POST
+    validate_certs: no
+    force_basic_auth: yes
+    body_format: json
+    status_code: 201
+    user: "{{ prism_user }}"
+    password: "{{ prism_password }}"
+    return_content: yes
+  register: create_snapshot_info
+  ignore_errors: yes
+
+- name: CREATE SNAPSHOT | Debug Snapshot Information
+  debug:
+    var: create_snapshot_info
+  when: global_debug
+
+- name: CREATE SNAPSHOT | Saving Task UUID
+  set_fact:
+    task_uuid: "{{ create_snapshot_info.json.task_uuid }}"
+
+- name: CREATE SNAPSHOT | Task UUID
+  debug:
+    var: task_uuid
+
+- name: CREATE SNAPSHOT | Setting Task Name
+  set_fact:
+    task_name: "create snapshot"
+
+- name: CREATE SNAPSHOT | Task Name
+  debug:
+    var: task_name

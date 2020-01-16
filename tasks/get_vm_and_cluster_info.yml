@@ -1,0 +1,99 @@
+---
+- name: GET VM AND CLUSTER INFO | Getting VM Information
+  uri:
+    url: "https://{{ prism_central }}:9440/api/nutanix/v3/vms/list"
+    body:
+      kind: vm
+      length: 500
+      offset: 0
+      sort_order: ASCENDING
+      sort_attribute: ''
+      filter: "vm_name=={{ vm_name }}"
+    method: POST
+    validate_certs: no
+    force_basic_auth: yes
+    body_format: json
+    status_code: 200
+    user: "{{ prism_user }}"
+    password: "{{ prism_password }}"
+  register: vm_info
+  ignore_errors: yes
+
+- name: GET VM AND CLUSTER INFO | Debug VM Information
+  debug:
+    var: vm_info
+  when: global_debug
+
+- name: "GET VM AND CLUSTER INFO | Fail If A VM Named {{ vm_name }} Was Not Found"
+  fail:
+    msg: "A VM Named {{ vm_name }} Was Not Found. Please Validate The VM Name And Try Again."
+  when: vm_info.json.metadata.total_matches == 0
+
+- name: GET VM AND CLUSTER INFO | Saving Session Cookie
+  set_fact:
+    session_cookie: "{{ vm_info.set_cookie }}"
+
+- name: GET VM AND CLUSTER INFO | Debug Session Cookie
+  debug:
+    var: session_cookie
+  when: global_debug
+
+- name: GET VM AND CLUSTER INFO | Saving VM UUID
+  set_fact:
+    vm_uuid: "{{ vm_info.json.entities.0.metadata.uuid }}"
+
+- name: GET VM AND CLUSTER INFO | VM UUID
+  debug:
+    var: vm_uuid
+
+- name: GET VM AND CLUSTER INFO | Saving VM Power State
+  set_fact:
+    vm_power_state: "{{ vm_info.json.entities.0.status.resources.power_state }}"
+
+- name: GET VM AND CLUSTER INFO | VM Power State
+  debug:
+    var: vm_power_state
+
+- name: GET VM AND CLUSTER INFO | Saving Host UUID
+  set_fact:
+    host_uuid: "{{ vm_info.json.entities.0.status.resources.host_reference.uuid }}"
+  when: vm_power_state == "ON"
+
+- name: GET VM AND CLUSTER INFO | Host UUID
+  debug:
+    var: host_uuid
+  when: host_uuid is defined
+
+- name: GET VM AND CLUSTER INFO | Saving Cluster UUID
+  set_fact:
+    cluster_uuid: "{{ vm_info.json.entities.0.spec.cluster_reference.uuid }}"
+
+- name: GET VM AND CLUSTER INFO | Cluster UUID
+  debug:
+    var: cluster_uuid
+
+- name: GET VM AND CLUSTER INFO | Getting Cluster Information
+  uri:
+    url: "https://{{ prism_central }}:9440/api/nutanix/v3/clusters/{{ cluster_uuid }}"
+    method: GET
+    validate_certs: no
+    force_basic_auth: yes
+    body_format: json
+    status_code: 200
+    headers: 
+      Cookie: "{{ session_cookie }}"
+  register: cluster_info
+  ignore_errors: yes
+
+- name: GET VM AND CLUSTER INFO | Debug Cluster Information
+  debug:
+    var: cluster_info
+  when: global_debug
+
+- name: GET VM AND CLUSTER INFO | Saving Cluster IP Address
+  set_fact:
+    cluster_ip: "{{ cluster_info.json.spec.resources.network.external_ip }}"
+
+- name: GET VM AND CLUSTER INFO | Cluster IP Address
+  debug:
+    var: cluster_ip

@@ -1,0 +1,43 @@
+---
+- name: GET SNAPSHOT INFO | Getting All Snapshots Of {{ vm_name }}
+  uri:
+    url: "https://{{ cluster_ip }}:9440/PrismGateway/services/rest/v2.0/snapshots/?vm_uuid={{ vm_uuid }}"
+    method: GET
+    validate_certs: no
+    force_basic_auth: yes
+    body_format: json
+    status_code: 200
+    user: "{{ prism_user }}"
+    password: "{{ prism_password }}"
+    return_content: yes
+  register: all_snapshot_info
+  ignore_errors: yes
+
+- name: GET SNAPSHOT INFO | Save Session Cookie
+  set_fact:
+    session_cookie: "{{ all_snapshot_info.set_cookie }}"
+
+- name: GET SNAPSHOT INFO | Debug Session Cookie
+  debug:
+    var: session_cookie
+  when: global_debug
+
+- name: GET SNAPSHOT INFO | Debug All Snapshot Information
+  debug:
+    var: all_snapshot_info
+  when: global_debug
+
+- name: GET SNAPSHOT INFO | Searching For A Snapshot Named {{ snapshot_name }}
+  set_fact:
+    snapshot_uuid: "{{ item.uuid }}"
+  when: "item.snapshot_name == snapshot_name"
+  loop: "{{ all_snapshot_info.json.entities }}"
+
+- name: GET SNAPSHOT INFO | Fail If A Snapshot Named {{ snapshot_name }} Was Not Found
+  fail:
+    msg: "A SNAPSHOT NAMED {{ snapshot_name }} WAS NOT FOUND"
+  when: snapshot_uuid is undefined
+
+- name: GET SNAPSHOT INFO | Snapshot UUID
+  debug:
+    var: snapshot_uuid

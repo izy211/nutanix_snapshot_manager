@@ -1,0 +1,35 @@
+---
+- name: DELETE SNAPSHOT | Deleting Snapshot {{ snapshot_name }} Of {{ vm_name }}
+  uri:
+    url: "https://{{ cluster_ip }}:9440/PrismGateway/services/rest/v2.0/snapshots/{{ snapshot_uuid }}"
+    method: DELETE
+    validate_certs: no
+    force_basic_auth: yes
+    body_format: json
+    status_code: 201
+    headers: 
+      Cookie: "{{ session_cookie }}"
+    return_content: yes
+  register: delete_snapshot_info
+  ignore_errors: yes
+
+- name: DELETE SNAPSHOT | Debug Delete Snapshot Information
+  debug:
+    var: delete_snapshot_info
+  when: global_debug
+
+- name: DELETE SNAPSHOT | Saving Task UUID
+  set_fact:
+    task_uuid: "{{ delete_snapshot_info.json.task_uuid }}"
+
+- name: DELETE SNAPSHOT | Task UUID
+  debug:
+    var: task_uuid
+
+- name: DELETE SNAPSHOT | Setting Task Name
+  set_fact:
+    task_name: "delete snapshot"
+
+- name: DELETE SNAPSHOT | Task Name
+  debug:
+    var: task_name

@@ -1,0 +1,46 @@
+---
+- name: Disable Debugging If Undefined
+  set_fact:
+    global_debug: False
+  when: global_debug is undefined
+
+- name: Disable Enforcement Of Unique Snapshot Name If Undefined
+  set_fact:
+    enforce_unique_name: False
+  when: enforce_unique_name is undefined
+
+- name: Restore Network Configuration From Snapshot If Undefined
+  set_fact:
+    restore_network_configuration: True
+  when: restore_network_configuration is undefined
+
+- name: Validating The Requested Snapshot Action {{ snapshot_action }}
+  assert:
+    that:
+      - snapshot_action is defined
+      - snapshot_action|lower == 'create' or 
+        snapshot_action|lower == 'restore' or
+        snapshot_action|lower == 'delete'
+    fail_msg: "AN INVALID SNAPSHOT ACTION {{ snapshot_action }} WAS ENTERED. VALID SNAPSHOT ACTIONS ARE (CASE-INSENSITIVE): CREATE | RESTORE | DELETE"
+    success_msg: "The Requested Snapshot Action Was Successfully Validated"
+
+- import_tasks: get_vm_and_cluster_info.yml
+
+- import_tasks: create_snapshot.yml
+  when: snapshot_action|lower == "create"
+
+- import_tasks: get_snapshot_info.yml
+  when:
+    - snapshot_action|lower == "restore" or
+      snapshot_action|lower == "delete"
+
+- import_tasks: restore_snapshot.yml
+  when: snapshot_action|lower == "restore"
+
+- import_tasks: delete_snapshot.yml
+  when: snapshot_action|lower == "delete"
+
+- import_tasks: get_task_status.yml
+  when:
+    - snapshot_action|lower == "create" or
+      snapshot_action|lower == "delete"
