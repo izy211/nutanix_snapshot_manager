@@ -1,1 +1,0 @@
-# nutanix_snapshot_manager
