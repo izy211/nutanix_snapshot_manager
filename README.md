@@ -17,7 +17,8 @@ An Ansible role that will create, restore, or delete a VM snapshot in a Nutanix 
 *The account password should be stored in an Ansible vault file*  
  
 **vm_name:** oh-snap  
-*The VM to be snapshotted*  
+*The VM to be snapshotted* 
+> **Note:** *The value is case sensative and must match the exact name as it appears in Prism Central*
  
 **snapshot_name:** before_some_changes  
 *The name of the snapshot*  
